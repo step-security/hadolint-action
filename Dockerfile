@@ -1,9 +1,8 @@
-FROM ghcr.io/hadolint/hadolint:v2.15.1-debian@sha256:9a3944b7fddcb947d1ffd90829ac1a6e5c30479223358f249d8b96c7d0019e27
+FROM ghcr.io/hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552
 
-# hadolint ignore=DL3008
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl jq \
-    && rm -rf /var/lib/apt/lists/*
+# hadolint ignore=DL3018
+RUN apk add --no-cache --upgrade bash ca-certificates coreutils curl jq \
+    libcrypto3=3.5.9-r0 libssl3=3.5.9-r0 musl=1.2.6-r3 musl-utils=1.2.6-r3 zlib=1.4-r0
 
 COPY LICENSE README.md problem-matcher.json /
 COPY hadolint.sh /usr/local/bin/hadolint.sh
