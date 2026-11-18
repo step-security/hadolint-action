@@ -60,26 +60,35 @@ trap cleanup EXIT
 
 echo "::add-matcher::$HOME/problem-matcher.json"
 
+config_args=()
 if [ -n "$HADOLINT_CONFIG" ]; then
-  HADOLINT_CONFIG="-c ${HADOLINT_CONFIG}"
+  config_args=(-c "$HADOLINT_CONFIG")
 fi
 
 if [ -z "$HADOLINT_TRUSTED_REGISTRIES" ]; then
   unset HADOLINT_TRUSTED_REGISTRIES
 fi
 
-COMMAND="hadolint $HADOLINT_CONFIG"
-
+# The inputs are never passed through eval. Word splitting and globbing of the
+# dockerfile input are kept (so values such as "*Dockerfile" keep working),
+# but shell metacharacters in it are not interpreted.
 if [ "$HADOLINT_RECURSIVE" = "true" ]; then
   shopt -s globstar
 
   filename="${!#}"
-  flags="${*:1:$#-1}"
+  extra_args=("${@:1:$#-1}")
 
-  RESULTS=$(eval "$COMMAND $flags" -- **/"$filename")
+  old_ifs=$IFS
+  IFS=
+  # shellcheck disable=SC2206
+  files=(**/$filename)
+  IFS=$old_ifs
+
+  RESULTS=$(hadolint "${config_args[@]}" "${extra_args[@]}" -- "${files[@]}")
 else
   flags=$*
-  RESULTS=$(eval "$COMMAND" "$flags")
+  # shellcheck disable=SC2086
+  RESULTS=$(hadolint "${config_args[@]}" $flags)
 fi
 FAILED=$?
 
@@ -87,21 +96,42 @@ if [ -n "$HADOLINT_OUTPUT" ]; then
   if [ -f "$HADOLINT_OUTPUT" ]; then
     HADOLINT_OUTPUT="$TMP_FOLDER/$HADOLINT_OUTPUT"
   fi
-  echo "$RESULTS" >"$HADOLINT_OUTPUT"
+
+  # Refuse to write over the runner's file-command files (GITHUB_ENV,
+  # GITHUB_PATH, GITHUB_OUTPUT, ...) or the workflow metadata.
+  OUTPUT_REAL=$(realpath -m -- "$HADOLINT_OUTPUT")
+  case "$OUTPUT_REAL" in
+    /github/file_commands | /github/file_commands/* | /github/workflow | /github/workflow/*)
+      echo "::error::output-file must not point to the runner's internal files: $HADOLINT_OUTPUT"
+      exit 1
+      ;;
+  esac
+  for runner_file in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do
+    if [ -n "$runner_file" ] && [ "$OUTPUT_REAL" = "$(realpath -m -- "$runner_file")" ]; then
+      echo "::error::output-file must not point to the runner's internal files: $HADOLINT_OUTPUT"
+      exit 1
+    fi
+  done
+
+  printf '%s\n' "$RESULTS" >"$HADOLINT_OUTPUT"
 fi
 
 RESULTS="${RESULTS//$'\\n'/''}"
 
+# Random delimiter so that the results can never close the heredoc-style
+# block early and inject further entries into GITHUB_OUTPUT / GITHUB_ENV.
+DELIMITER="HADOLINT_EOF_$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "$RANDOM$RANDOM$$")"
+
 {
-  echo "results<<EOF"
-  echo "$RESULTS"
-  echo "EOF"
+  echo "results<<$DELIMITER"
+  printf '%s\n' "$RESULTS"
+  echo "$DELIMITER"
 } >>"$GITHUB_OUTPUT"
 
 {
-  echo "HADOLINT_RESULTS<<EOF"
-  echo "$RESULTS"
-  echo "EOF"
+  echo "HADOLINT_RESULTS<<$DELIMITER"
+  printf '%s\n' "$RESULTS"
+  echo "$DELIMITER"
 } >>"$GITHUB_ENV"
 
 [ -z "$HADOLINT_OUTPUT" ] || echo "Hadolint output saved to: $HADOLINT_OUTPUT"

@@ -41,6 +41,8 @@ steps:
 | `ignore`             | Comma separated list of Hadolint rules to ignore.                                                                                       | <none>             |
 | `trusted-registries` | Comma separated list of urls of trusted registries                                                                                      |                    |
 
+> **Note:** `output-file` cannot point to the runner's internal files (for example the `GITHUB_ENV`/`GITHUB_OUTPUT` files). As with any action input, avoid passing untrusted data (such as PR titles or branch names) to `dockerfile`, `config` or `output-file`.
+
 ## Output
 
 The Action will store results in an environment variable that can be used in other steps in a workflow.
