@@ -59,7 +59,7 @@ jobs:
         run: docker build -t $TEST_IMAGE_NAME .
 
       - name: Run Structure tests
-        uses: brpaz/structure-tests-action@814df1d626990796d73100ef248792a7d03260ea # v1.1.2
+        uses: brpaz/structure-tests-action@dac5ee013c28d64b5da3ec7cf0b0cb8b22027cf6 # v1.4.0
         with:
           image: ${{ env.TEST_IMAGE_NAME }}
 
