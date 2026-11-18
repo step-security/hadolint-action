@@ -76,7 +76,7 @@ inputs:
 
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://ghcr.io/step-security/hadolint-action:v3.5.0@sha256:52d4f86047e49d1551c06ef2ef54bd224a2584f06194efd75e199c03dd2c9af4' # v3.5.0
   args:
     - ${{ inputs.dockerfile }}
   env:
