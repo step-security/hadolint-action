@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: pipelinecomponents/hadolint:0.27.2
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run hadolint
         run: hadolint Dockerfile
@@ -28,10 +28,15 @@ jobs:
     name: ShellCheck
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run ShellCheck
-        uses: reviewdog/action-shellcheck@v1
+        uses: reviewdog/action-shellcheck@950c9d71535c8c49e5c029c33a438ade63b9009c # v1.35.1
         with:
           reporter: github-pr-review
           fail_on_error: true
@@ -43,13 +48,18 @@ jobs:
       - lint
       - shellcheck
     steps:
-      - uses: actions/checkout@v7
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build Docker image
         run: docker build -t $TEST_IMAGE_NAME .
 
       - name: Run Structure tests
-        uses: brpaz/structure-tests-action@v1.1.2
+        uses: brpaz/structure-tests-action@814df1d626990796d73100ef248792a7d03260ea # v1.1.2
         with:
           image: ${{ env.TEST_IMAGE_NAME }}
 
@@ -65,7 +75,12 @@ jobs:
           - ubuntu-24.04-arm
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run integration test 1
         uses: ./
