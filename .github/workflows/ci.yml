@@ -10,8 +10,7 @@ env:
   TEST_IMAGE_NAME: hadolint-action:${{github.sha}}
 
 permissions:
-  contents: write
-  issues: write  # Used by Release step to update "The automated release is failing" issue
+  contents: read
   pull-requests: write  # Used by ShellCheck Action to add comments on PR
 
 jobs:

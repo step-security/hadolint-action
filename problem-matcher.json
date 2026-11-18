@@ -1,7 +1,7 @@
 {
   "problemMatcher": [
     {
-      "owner": "hadolint/hadolint-action",
+      "owner": "step-security/hadolint-action",
       "pattern": [
         {
           "regexp": "^(.+):(\\d+)\\s(.+)\\s(error|warning|info|style):\\s(.+)$",
